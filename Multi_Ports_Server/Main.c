@@ -7,8 +7,11 @@
 #include <netinet/ip.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 //-------------------------------------------------------------------------------------------------
 // Private constants
@@ -25,8 +28,10 @@
 //-------------------------------------------------------------------------------------------------
 int main(void)
 {
-	int Socket_First_Server, Socket_Second_Server, Socket_Third_Server;
+	int Socket_First_Server, Socket_Second_Server, Socket_Third_Server, Socket, Socket_Client, Result, Server_Identifier;
 	struct sockaddr_in Address;
+	fd_set Set_Read;
+	socklen_t Address_Size;
 	
 	// Create first server socket
 	Socket_First_Server = socket(AF_INET, SOCK_STREAM, 0);
@@ -97,6 +102,61 @@ int main(void)
 	{
 		perror("Failed to listen third server socket");
 		return EXIT_FAILURE;
+	}
+	
+	// Wait for clients to connect
+	while (1)
+	{
+		puts("Waiting for a client to connect...");
+		
+		// Create the set of sockets to monitor
+		FD_ZERO(&Set_Read);
+		FD_SET(Socket_First_Server, &Set_Read);
+		FD_SET(Socket_Second_Server, &Set_Read);
+		FD_SET(Socket_Third_Server, &Set_Read);
+		Result = select(FD_SETSIZE, &Set_Read, NULL, NULL, NULL);
+		if (Result < 0)
+		{
+			perror("Error in select");
+			return EXIT_FAILURE;
+		}
+		else if (Result == 0)
+		{
+			puts("WARNING : no client connection detected, retrying. This should not happen.");
+			continue;
+		}
+		
+		// Determine the server a client connected to
+		if (FD_ISSET(Socket_First_Server, &Set_Read))
+		{
+			Socket = Socket_First_Server;
+			Server_Identifier = 1;
+		}
+		else if (FD_ISSET(Socket_Second_Server, &Set_Read))
+		{
+			Socket = Socket_Second_Server;
+			Server_Identifier = 2;
+		}
+		else if (FD_ISSET(Socket_Third_Server, &Set_Read))
+		{
+			Socket = Socket_Third_Server;
+			Server_Identifier = 3;
+		}
+		else
+		{
+			puts("WARNING : can't determine the server a client wanted to connect to, retrying. This should not happen.");
+			continue;
+		}
+		
+		// Connect with client
+		Address_Size = sizeof(Address);
+		Socket_Client = accept(Socket, (struct sockaddr *) &Address, &Address_Size);
+		if (Socket_Client == -1)
+		{
+			perror("Failed to accept client socket");
+			return EXIT_FAILURE;
+		}
+		printf("Client connected to server %d. Client port : %d.\n", Server_Identifier, ntohs(Address.sin_port));
 	}
 	
 	return EXIT_SUCCESS;
