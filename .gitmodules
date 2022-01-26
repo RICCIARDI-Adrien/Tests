@@ -1,0 +1,3 @@
+[submodule "Linux_IIO_Network_Server/libiio"]
+	path = Linux_IIO_Network_Server/libiio
+	url = https://github.com/analogdevicesinc/libiio

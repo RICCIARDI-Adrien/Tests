@@ -1,0 +1,49 @@
+BISON ?= bison
+CC ?= gcc
+CMAKE ?= cmake
+FLEX ?= flex
+
+CURRENT_DIRECTORY = $(PWD)
+PATH_OBJECTS = $(CURRENT_DIRECTORY)/Objects
+PATH_IIO_SOURCES = $(CURRENT_DIRECTORY)/libiio
+
+CFLAGS = -W -Wall
+
+BINARY = iio-network-server
+SOURCES = $(wildcard Sources/*.c)
+
+all: $(PATH_OBJECTS) $(PATH_OBJECTS)/IIO_Build $(PATH_OBJECTS)/lexer.c $(PATH_OBJECTS)/parser.c
+	$(CC) $(CFLAGS) -I$(PATH_IIO_SOURCES) -I$(PATH_IIO_SOURCES)/iiod -I$(PATH_OBJECTS)/IIO_Build -I$(PATH_OBJECTS)/IIO_Build/iiod  $(SOURCES) $(PATH_OBJECTS)/lexer.c $(PATH_OBJECTS)/parser.c -o $(BINARY)
+
+$(PATH_OBJECTS)/IIO_Build:
+	mkdir -p $(PATH_OBJECTS)/IIO_Build
+	# TODO : disable everything for now, just to be able to build the parser
+	cd $(PATH_OBJECTS)/IIO_Build && $(CMAKE) $(PATH_IIO_SOURCES) \
+		-DWITH_LOCAL_BACKEND=ON \
+		-DWITH_XML_BACKEND=OFF \
+		-DWITH_NETWORK_BACKEND=OFF \
+		-DWITH_USB_BACKEND=OFF \
+		-DWITH_SERIAL_BACKEND=OFF \
+		-DWITH_NETWORK_GET_BUFFER=OFF \
+		-DWITH_NETWORK_EVENTFD=OFF \
+		-DWITH_IIOD_USBD=OFF \
+		-DWITH_IIOD_SERIAL=OFF \
+		-DWITH_LOCAL_CONFIG=OFF \
+		-DWITH_LOCAL_MMAP_API=OFF \
+		-DWITH_HWMON=OFF \
+		-DWITH_AIO=OFF \
+		-DHAVE_DNS_SD=OFF \
+		-DHAVE_AVAHI=OFF \
+		-DWITH_ZSTD=OFF
+
+$(PATH_OBJECTS)/lexer.c: $(PATH_IIO_SOURCES)/iiod/lexer.l
+	$(FLEX) -o $(PATH_OBJECTS)/lexer.c $(PATH_IIO_SOURCES)/iiod/lexer.l
+
+$(PATH_OBJECTS)/parser.c: $(PATH_IIO_SOURCES)/iiod/parser.y
+	$(BISON) -o $(PATH_OBJECTS)/parser.c -d $(PATH_IIO_SOURCES)/iiod/parser.y
+
+$(PATH_OBJECTS):
+	mkdir -p $(PATH_OBJECTS)
+
+clean:
+	rm -rf $(BINARY) $(PATH_OBJECTS)
