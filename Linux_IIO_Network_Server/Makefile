@@ -13,7 +13,7 @@ BINARY = iio-network-server
 SOURCES = $(wildcard Sources/*.c)
 
 all: $(PATH_OBJECTS) $(PATH_OBJECTS)/IIO_Build $(PATH_OBJECTS)/lexer.c $(PATH_OBJECTS)/parser.c
-	$(CC) $(CFLAGS) -I$(PATH_IIO_SOURCES) -I$(PATH_IIO_SOURCES)/iiod -I$(PATH_OBJECTS)/IIO_Build -I$(PATH_OBJECTS)/IIO_Build/iiod  $(SOURCES) $(PATH_OBJECTS)/lexer.c $(PATH_OBJECTS)/parser.c -o $(BINARY)
+	$(CC) $(CFLAGS) -I$(PATH_IIO_SOURCES) -I$(PATH_IIO_SOURCES)/iiod -I$(PATH_OBJECTS) -I$(PATH_OBJECTS)/IIO_Build -I$(PATH_OBJECTS)/IIO_Build/iiod $(SOURCES) $(PATH_OBJECTS)/lexer.c $(PATH_OBJECTS)/parser.c -o $(BINARY)
 
 $(PATH_OBJECTS)/IIO_Build:
 	mkdir -p $(PATH_OBJECTS)/IIO_Build
