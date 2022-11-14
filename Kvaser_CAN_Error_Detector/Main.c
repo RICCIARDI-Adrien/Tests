@@ -30,7 +30,7 @@ static char *GetErrorMessage(canStatus Error_Code)
 int main(int argc, char *argv[])
 {
 	canHandle Handle;
-	int Channel;
+	int Channel, Return_Value = EXIT_FAILURE;
 	canStatus Result;
 	unsigned char Payload[64];
 	unsigned int Data_Length, Flags, i;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
 	// Try to open the requested channel
 	canInitializeLibrary();
-	Handle = canOpenChannel(Channel, canOPEN_REQUIRE_INIT_ACCESS);
+	Handle = canOpenChannel(Channel, canOPEN_CAN_FD | canOPEN_REQUIRE_INIT_ACCESS);
 	if (Handle < 0)
 	{
 		printf("Error : failed to open channel %d (%s).\n", Channel, GetErrorMessage(Handle));
@@ -60,17 +60,23 @@ int main(int argc, char *argv[])
 
 	// Configure the bus parameters
 	printf("Configuring bus parameters...\n");
-	Result = canSetBusParams(Handle, canFD_BITRATE_8M_80P, 0, 0, 0, 0, 0);
+	Result = canSetBusParams(Handle, canBITRATE_1M, 0, 0, 0, 0, 0);
 	if (Result != canOK)
 	{
-		printf("Error : failed to configure bus parameters (%s).\n", GetErrorMessage(Result));
-		return EXIT_FAILURE;
+		printf("Error : failed to configure classic CAN bus rate (%s).\n", GetErrorMessage(Result));
+		goto Exit_Close_Handle;
+	}
+	Result = canSetBusParamsFd(Handle, canFD_BITRATE_8M_80P, 0, 0, 0);
+	if (Result != canOK)
+	{
+		printf("Error : failed to configure CAN FD bus rate (%s).\n", GetErrorMessage(Result));
+		goto Exit_Close_Handle;
 	}
 	Result = canSetBusOutputControl(Handle, canDRIVER_NORMAL);
 	if (Result != canOK)
 	{
 		printf("Error : failed to configure bus output control (%s).\n", GetErrorMessage(Result));
-		return EXIT_FAILURE;
+		goto Exit_Close_Handle;
 	}
 
 	// Access to hardware
@@ -79,7 +85,7 @@ int main(int argc, char *argv[])
 	if (Result != canOK)
 	{
 		printf("Error : failed to turn bus on (%s).\n", GetErrorMessage(Result));
-		return EXIT_FAILURE;
+		goto Exit_Close_Handle;
 	}
 	
 	printf("Waiting for CAN frames ...\n");
@@ -90,7 +96,7 @@ int main(int argc, char *argv[])
 		if (Result != canOK)
 		{
 			printf("Error : failed to read a CAN frame (%s).\n", GetErrorMessage(Result));
-			return EXIT_FAILURE;
+			goto Exit_Turn_Bus_Off;
 		}
 
 		printf("TEST %u\n", Data_Length);
@@ -99,12 +105,11 @@ int main(int argc, char *argv[])
 		break;
 	}
 
+Exit_Turn_Bus_Off:
 	Result = canBusOff(Handle);
-	if (Result != canOK)
-	{
-		printf("Error : failed to turn bus off (%s).\n", GetErrorMessage(Result));
-		return EXIT_FAILURE;
-	}
+	if (Result != canOK) printf("Error : failed to turn bus off (%s).\n", GetErrorMessage(Result));
+
+Exit_Close_Handle:
 	canClose(Handle);
-	return EXIT_FAILURE;
+	return Return_Value;
 }
