@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
 	canHandle Handle;
 	int Channel, Return_Value = EXIT_FAILURE, Reception_Statistics_Counter = 0;
 	canStatus Result;
-	unsigned int Flags;
-	unsigned long Error_Counters[CAN_ERROR_IDS_COUNT] = {0}, Cumulated_Errors_Counter = 0, Received_Valid_Frames_Counter = 0;
+	unsigned int Flags, Data_Length_Code;
+	unsigned long Error_Counters[CAN_ERROR_IDS_COUNT] = {0}, Cumulated_Errors_Counter = 0, Received_Valid_Frames_Counter = 0, Received_Valid_Payload_Bytes_Count = 0, Error_Frames_Counter = 0;
 
 	// Check parameters
 	if (argc != 2)
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		// Wait for a frame to be received
-		Result = canReadWait(Handle, NULL, NULL, NULL, &Flags, NULL, 10000); // Automatically exit program when no frame is received after 10 seconds
+		Result = canReadWait(Handle, NULL, NULL, &Data_Length_Code, &Flags, NULL, 10000); // Automatically exit program when no frame is received after 10 seconds
 		if (Result != canOK)
 		{
 			if (Result == canERR_TIMEOUT) printf("Timeout while waiting for CAN frames, exiting program.\n");
@@ -117,7 +117,8 @@ int main(int argc, char *argv[])
 		}
 
 		// Did any error occurred ?
-		if (Flags & canMSGERR_MASK)
+		if (Flags & canMSG_ERROR_FRAME) Error_Frames_Counter++;
+		else if (Flags & canMSGERR_MASK)
 		{
 			Cumulated_Errors_Counter++;
 			if (Flags & canMSGERR_HW_OVERRUN) Error_Counters[CAN_ERROR_ID_HW_OVERRUN]++;
@@ -128,13 +129,17 @@ int main(int argc, char *argv[])
 			if (Flags & canMSGERR_BIT0) Error_Counters[CAN_ERROR_ID_BIT0]++;
 			if (Flags & canMSGERR_BIT1) Error_Counters[CAN_ERROR_ID_BIT1]++;
 		}
-		else Received_Valid_Frames_Counter++;
+		else
+		{
+			Received_Valid_Frames_Counter++;
+			Received_Valid_Payload_Bytes_Count += Data_Length_Code;
+		}
 
 		// Display received frames indicator
 		if (Reception_Statistics_Counter < 999) Reception_Statistics_Counter++;
 		else
 		{
-			printf("Received valid frames : %lu, cumulated errors : %lu\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter);
+			printf("Received valid frames : %lu, cumulated errors : %lu, error frames : %lu, received valid payload bytes : %lu\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter, Error_Frames_Counter, Received_Valid_Payload_Bytes_Count);
 			Reception_Statistics_Counter = 0;
 		}
 	}
@@ -142,6 +147,8 @@ int main(int argc, char *argv[])
 	// Display statistics
 	printf("----------\n"
 		"Received valid frames : %lu\n"
+		"Received valid payload bytes : %lu\n"
+		"Error_Frames_Counter = %lu\n"
 		"Cumulated errors : %lu\n"
 		"Hardware overruns : %lu\n"
 		"Software overruns : %lu\n"
@@ -151,6 +158,8 @@ int main(int argc, char *argv[])
 		"Bit 0 errors : %lu\n"
 		"Bit 1 errors : %lu\n",
 		Received_Valid_Frames_Counter,
+		Received_Valid_Payload_Bytes_Count,
+		Error_Frames_Counter,
 		Cumulated_Errors_Counter,
 		Error_Counters[CAN_ERROR_ID_HW_OVERRUN],
 		Error_Counters[CAN_ERROR_ID_SW_OVERRUN]++,
