@@ -46,7 +46,7 @@ static char *GetErrorMessage(canStatus Error_Code)
 int main(int argc, char *argv[])
 {
 	canHandle Handle;
-	int Channel, Return_Value = EXIT_FAILURE;
+	int Channel, Return_Value = EXIT_FAILURE, Reception_Statistics_Counter = 0;
 	canStatus Result;
 	unsigned int Flags;
 	unsigned long Error_Counters[CAN_ERROR_IDS_COUNT] = {0}, Cumulated_Errors_Counter = 0, Received_Valid_Frames_Counter = 0;
@@ -129,10 +129,19 @@ int main(int argc, char *argv[])
 			if (Flags & canMSGERR_BIT1) Error_Counters[CAN_ERROR_ID_BIT1]++;
 		}
 		else Received_Valid_Frames_Counter++;
+
+		// Display received frames indicator
+		if (Reception_Statistics_Counter < 999) Reception_Statistics_Counter++;
+		else
+		{
+			printf("Received valid frames : %lu, cumulated errors : %lu\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter);
+			Reception_Statistics_Counter = 0;
+		}
 	}
 
 	// Display statistics
-	printf("Received valid frames : %lu\n"
+	printf("----------\n"
+		"Received valid frames : %lu\n"
 		"Cumulated errors : %lu\n"
 		"Hardware overruns : %lu\n"
 		"Software overruns : %lu\n"
