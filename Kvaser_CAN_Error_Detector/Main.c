@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 	canHandle Handle;
 	int Channel, Return_Value = EXIT_FAILURE, Reception_Statistics_Counter = 0;
 	canStatus Result;
-	unsigned int Flags, Data_Length_Code;
+	unsigned int Flags, Data_Length_Code, CAN_Error_Counter_Transmission, CAN_Error_Counter_Reception, CAN_Error_Counter_Overrun;
 	unsigned long Error_Counters[CAN_ERROR_IDS_COUNT] = {0}, Cumulated_Errors_Counter = 0, Received_Valid_Frames_Counter = 0, Received_Valid_Payload_Bytes_Count = 0, Error_Frames_Counter = 0;
 
 	// Check parameters
@@ -139,7 +139,15 @@ int main(int argc, char *argv[])
 		if (Reception_Statistics_Counter < 999) Reception_Statistics_Counter++;
 		else
 		{
-			printf("Received valid frames : %lu, cumulated errors : %lu, error frames : %lu, received valid payload bytes : %lu\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter, Error_Frames_Counter, Received_Valid_Payload_Bytes_Count);
+			// Get the needed statistics
+			Result = canReadErrorCounters(Handle, &CAN_Error_Counter_Transmission, &CAN_Error_Counter_Reception, &CAN_Error_Counter_Overrun);
+			if (Result != canOK)
+			{
+				printf("Error : failed to retrieve the CAN controller error counters (%s).\n", GetErrorMessage(Result));
+				goto Exit_Turn_Bus_Off;
+			}
+
+			printf("Received valid frames : %lu, cumulated errors : %lu, error frames : %lu, received valid payload bytes : %lu, error counter TX : %u, error counter RX : %u, error counter overrun : %u\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter, Error_Frames_Counter, Received_Valid_Payload_Bytes_Count, CAN_Error_Counter_Transmission, CAN_Error_Counter_Reception, CAN_Error_Counter_Overrun);
 			Reception_Statistics_Counter = 0;
 		}
 	}
@@ -148,7 +156,7 @@ int main(int argc, char *argv[])
 	printf("----------\n"
 		"Received valid frames : %lu\n"
 		"Received valid payload bytes : %lu\n"
-		"Error_Frames_Counter = %lu\n"
+		"Error frames counter = %lu\n"
 		"Cumulated errors : %lu\n"
 		"Hardware overruns : %lu\n"
 		"Software overruns : %lu\n"
@@ -170,6 +178,7 @@ int main(int argc, char *argv[])
 		Error_Counters[CAN_ERROR_ID_BIT1]);
 
 	// Turn bus off
+Exit_Turn_Bus_Off:
 	Result = canBusOff(Handle);
 	if (Result != canOK) printf("Error : failed to turn bus off (%s).\n", GetErrorMessage(Result));
 
