@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 		Result = canReadWait(Handle, NULL, NULL, &Data_Length_Code, &Flags, NULL, 10000); // Automatically exit program when no frame is received after 10 seconds
 		if (Result != canOK)
 		{
-			if (Result == canERR_TIMEOUT) printf("Timeout while waiting for CAN frames, exiting program.\n");
+			if (Result == canERR_NOMSG) printf("Timeout while waiting for CAN frames, exiting program.\n");
 			else printf("Error : failed to read a CAN frame (%s).\n", GetErrorMessage(Result));
 			break;
 		}
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 				goto Exit_Turn_Bus_Off;
 			}
 
-			printf("Received valid frames : %lu, cumulated errors : %lu, error frames : %lu, received valid payload bytes : %lu, error counter TX : %u, error counter RX : %u, error counter overrun : %u\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter, Error_Frames_Counter, Received_Valid_Payload_Bytes_Count, CAN_Error_Counter_Transmission, CAN_Error_Counter_Reception, CAN_Error_Counter_Overrun);
+			printf("Received valid frames : %lu, cumulated errors : %lu, error frames : %lu, received valid payload bytes : %lu, error counter TX : %u, error counter RX : %u, error counter overrun : %u.\n", Received_Valid_Frames_Counter, Cumulated_Errors_Counter, Error_Frames_Counter, Received_Valid_Payload_Bytes_Count, CAN_Error_Counter_Transmission, CAN_Error_Counter_Reception, CAN_Error_Counter_Overrun);
 			Reception_Statistics_Counter = 0;
 		}
 	}
