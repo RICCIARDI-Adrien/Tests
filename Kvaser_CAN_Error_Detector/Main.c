@@ -116,9 +116,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		// Did any error occurred ?
+		// Take error frames into account
 		if (Flags & canMSG_ERROR_FRAME) Error_Frames_Counter++;
-		else if (Flags & canMSGERR_MASK)
+
+		// Did any error occurred ?
+		if (Flags & canMSGERR_MASK)
 		{
 			Cumulated_Errors_Counter++;
 			if (Flags & canMSGERR_HW_OVERRUN) Error_Counters[CAN_ERROR_ID_HW_OVERRUN]++;
