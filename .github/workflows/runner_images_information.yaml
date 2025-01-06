@@ -1,0 +1,14 @@
+name: Retrieve some information from the GitHub-provided runner images
+on: [push, pull_request]
+
+jobs:
+  linux:
+    name: Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display disk usage
+        run: |
+          printf "\033[33m--- Free disk space ---\033[0m\n"
+          df -h
+          printf "\033[33m--- Used disk space ---\033[0m\n"
+          sudo du -h --max-depth=1 --exclude=/dev --exclude=/proc --exclude=/sys /
