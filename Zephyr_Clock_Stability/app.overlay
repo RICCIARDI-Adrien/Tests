@@ -1,0 +1,7 @@
+&timer132 {
+	status = "okay";
+};
+
+&gpio9 {
+	status = "okay";
+};
