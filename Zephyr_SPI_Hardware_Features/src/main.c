@@ -18,8 +18,12 @@ int main(void)
 
 	printk("App core is starting.\n");
 
-	memcpy(buffer, "SALUT !", 7);
-	ret = spi_write(spi_device, &spi_config, &buffers_set);
+	while (1) {
+		memcpy(buffer, "SALUT !", 7);
+		ret = spi_write(spi_device, &spi_config, &buffers_set);
+
+		k_msleep(1000);
+	}
 
 	return 0;
 }
