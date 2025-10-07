@@ -12,7 +12,16 @@ struct driver_spi_config {
 
 static int driver_spi_init(const struct device *dev)
 {
+	const struct driver_spi_config *config = dev->config;
+	int ret;
+
 	LOG_DBG("Starting initialization.");
+
+	ret = pinctrl_apply_state(config->pcfg, PINCTRL_STATE_DEFAULT);
+	if (ret != 0) {
+		LOG_ERR("Failed to apply the default pin control state.");
+		return ret;
+	}
 
 	return 0;
 }
