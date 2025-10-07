@@ -19,6 +19,8 @@ static int driver_spi_init(const struct device *dev)
 
 static int driver_spi_transceive(const struct device *dev, const struct spi_config *spi_cfg, const struct spi_buf_set *tx_bufs, const struct spi_buf_set *rx_bufs)
 {
+	LOG_DBG("Starting transferring data.");
+
 	return 0;
 }
 
