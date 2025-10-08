@@ -24,6 +24,8 @@ static int driver_spi_init(const struct device *dev)
 {
 	const struct driver_spi_config *config = dev->config;
 	nrfx_spim_config_t spim_config = {
+		.use_hw_ss = true,
+		.ss_duration = 30,
 		.ss_active_high = false,
 		.irq_priority = NRFX_SPIM_DEFAULT_CONFIG_IRQ_PRIORITY,
 		.frequency = MHZ(8),
