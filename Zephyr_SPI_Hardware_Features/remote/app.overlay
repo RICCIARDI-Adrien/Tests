@@ -1,0 +1,16 @@
+&pinctrl {
+	spim132_default: spim132_default {
+		group1 {
+			psels = < NRF_PSEL(SPIM_MISO, 1, 4) >,
+				< NRF_PSEL(SPIM_MOSI, 1, 5) >,
+				< NRF_PSEL(SPIM_SCK, 1, 0) >,
+				< NRF_PSEL(SPIM_CSN, 1, 6) >;
+		};
+	};
+};
+
+&spi132 {
+	status = "okay";
+	pinctrl-0 = < &spim132_default >;
+	pinctrl-names = "default";
+};

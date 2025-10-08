@@ -7,8 +7,14 @@
 LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 
 // SPIM buffers must be in Data RAM for the EasyDMA to be able to access them
-static unsigned char __attribute__((__section__("DMA_RAM3x_APP"))) __attribute__((aligned(sizeof(uint32_t)))) transmission_buffer[16];
-static unsigned char __attribute__((__section__("DMA_RAM3x_APP"))) __attribute__((aligned(sizeof(uint32_t)))) reception_buffer[16];
+#ifdef NRF_RADIOCORE
+	#define BUFFERS_SECTION "DMA_RAM3x_RAD"
+#else
+	#define BUFFERS_SECTION "DMA_RAM3x_APP"
+#endif
+static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__((aligned(sizeof(uint32_t)))) transmission_buffer[16];
+static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__((aligned(sizeof(uint32_t)))) reception_buffer[16];
+
 
 struct driver_spi_config {
 	nrfx_spim_t spim_instance;
@@ -40,7 +46,11 @@ static int driver_spi_init(const struct device *dev)
 	LOG_DBG("Starting initialization.");
 
 	// TEST
+#ifdef NRF_RADIOCORE
+	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(132)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(132), 0, 0);
+#else
 	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(131)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(131), 0, 0);
+#endif
 
 	ret = nrfx_spim_init(&config->spim_instance, &spim_config, driver_spi_handler, NULL);
     if (ret != NRFX_SUCCESS) {

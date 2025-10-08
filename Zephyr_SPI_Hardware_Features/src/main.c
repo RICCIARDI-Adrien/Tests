@@ -14,7 +14,9 @@ int main(void)
 		.buffers = &buffers_descriptor,
 		.count = 1
 	};
-	struct spi_config spi_config = {0};
+	struct spi_config spi_config = {
+		.operation = SPI_OP_MODE_MASTER | SPI_LINES_SINGLE | SPI_MODE_CPOL | SPI_MODE_CPHA | SPI_WORD_SET(8)
+	};
 
 	printk("App core is starting.\n");
 
