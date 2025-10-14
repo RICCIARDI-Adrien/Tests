@@ -6,6 +6,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(remote)
 target_sources(app PRIVATE
-	../src/driver_spi.c
 	src/main.c
 )
