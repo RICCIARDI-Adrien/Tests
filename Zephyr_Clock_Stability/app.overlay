@@ -5,3 +5,7 @@
 &gpio9 {
 	status = "okay";
 };
+
+&gpiote130 {
+	status = "okay";
+};
