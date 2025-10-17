@@ -2,6 +2,19 @@
 	status = "okay";
 };
 
+&dppic130 {
+	status = "okay";
+	owned-channels = < 4 >;
+	source-channels = < 4 >;
+	sink-channels = < 4 >;
+};
+
+&dppic134 {
+	status = "okay";
+	owned-channels = < 4 >;
+	source-channels = < 4 >;
+};
+
 &gpio9 {
 	status = "okay";
 };
