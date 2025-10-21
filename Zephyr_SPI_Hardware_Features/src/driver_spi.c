@@ -1,10 +1,19 @@
+#include <helpers/nrfx_gppi.h>
 #include <nrfx_spim.h>
+#include <nrfx_timer.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
+
+#define TIMER_INSTANCE_ID 130
+
+struct driver_spi_config {
+	nrfx_spim_t spim_instance;
+	const struct pinctrl_dev_config *pcfg;
+};
 
 // SPIM buffers must be in Data RAM for the EasyDMA to be able to access them
 #ifdef NRF_RADIOCORE
@@ -15,11 +24,10 @@ LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__((aligned(sizeof(uint32_t)))) transmission_buffer[16];
 static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__((aligned(sizeof(uint32_t)))) reception_buffer[16];
 
+static nrfx_spim_xfer_desc_t transfer_descriptor = NRFX_SPIM_XFER_TRX(transmission_buffer, 7, reception_buffer, 7);
 
-struct driver_spi_config {
-	nrfx_spim_t spim_instance;
-	const struct pinctrl_dev_config *pcfg;
-};
+static NRF_TIMER_Type *pointerTimer = (NRF_TIMER_Type *) DT_REG_ADDR(DT_NODELABEL(timer130));
+static NRF_SPIM_Type *pointerSPIM = (NRF_SPIM_Type *) DT_REG_ADDR(DT_NODELABEL(spi131));
 
 static void driver_spi_handler(nrfx_spim_evt_t const * p_event, void * p_context)
 {
@@ -34,14 +42,18 @@ static int driver_spi_init(const struct device *dev)
 		.ss_duration = 30,
 		.ss_active_high = false,
 		.irq_priority = NRFX_SPIM_DEFAULT_CONFIG_IRQ_PRIORITY,
-		.frequency = MHZ(8),
+		.frequency = MHZ(2), // Decrease the frequency to better see the DK LEDs connected to the SPI pins flashing
 		.mode = NRF_SPIM_MODE_0,
 		.bit_order = NRF_SPIM_BIT_ORDER_MSB_FIRST,
 		.miso_pull = NRF_GPIO_PIN_NOPULL,
 		.skip_gpio_cfg = true,
-		.skip_psel_cfg = true
+		.skip_psel_cfg = false // There is a bug in the NRF API that skips setting the hardware /CS feature if PSELs are not configured
 	};
 	nrfx_err_t ret;
+	nrfx_timer_t timerInstance = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_ID);
+	nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG(1000000);
+	uint8_t gppiChannel;
+	uint32_t ticks;
 
 	LOG_DBG("Starting initialization.");
 
@@ -52,11 +64,29 @@ static int driver_spi_init(const struct device *dev)
 	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(131)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(131), 0, 0);
 #endif
 
+	// Initialize the selected timer
+	timer_config.bit_width = NRF_TIMER_BIT_WIDTH_32;
+	ret = nrfx_timer_init(&timerInstance, &timer_config, NULL);
+	if (ret != NRFX_SUCCESS) {
+		printk("Error : failed to initialize the timer (%d).", ret);
+		return -1;
+	}
+	nrfx_timer_clear(&timerInstance);
+
+	// Configure the timer channel 0 to overflow each 200ms
+	ticks = nrfx_timer_us_to_ticks(&timerInstance, 200000);
+	nrfx_timer_extended_compare(&timerInstance, NRF_TIMER_CC_CHANNEL0, ticks, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
+
 	ret = nrfx_spim_init(&config->spim_instance, &spim_config, driver_spi_handler, NULL);
     if (ret != NRFX_SUCCESS) {
 		LOG_ERR("Failed to initialize the SPIM peripheral.");
 		return ret;
 	}
+
+	memcpy(transmission_buffer, "SALUT !", 7);
+	nrfy_spim_buffers_set(pointerSPIM, &transfer_descriptor);
+	nrfy_spim_int_enable(pointerSPIM, NRF_SPIM_INT_END_MASK);
+	nrfy_spim_enable(pointerSPIM);
 
 	ret = pinctrl_apply_state(config->pcfg, PINCTRL_STATE_DEFAULT);
 	if (ret != 0) {
@@ -64,12 +94,27 @@ static int driver_spi_init(const struct device *dev)
 		return ret;
 	}
 
+	ret = nrfx_gppi_channel_alloc(&gppiChannel);
+	if (ret != NRFX_SUCCESS) {
+		LOG_ERR("Failed to allocate a GPPI channel.");
+		return ret;
+	}
+	LOG_DBG("Allocated GPPI channel : %u.", gppiChannel);
+
+	nrfx_gppi_channel_endpoints_setup(gppiChannel,
+		nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0),
+		nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START));
+	nrfx_gppi_channels_enable(NRFX_BIT(gppiChannel));
+
+	// Start ticking the SPI transfers
+	nrfx_timer_enable(&timerInstance);
+
 	return 0;
 }
 
 static int driver_spi_transceive(const struct device *dev, const struct spi_config *spi_cfg, const struct spi_buf_set *tx_bufs, const struct spi_buf_set *rx_bufs)
 {
-	const struct driver_spi_config *config = dev->config;
+	/*const struct driver_spi_config *config = dev->config;
 	nrfx_err_t ret;
 
 	LOG_DBG("Starting transferring data.");
@@ -81,7 +126,8 @@ static int driver_spi_transceive(const struct device *dev, const struct spi_conf
 	if (ret != NRFX_SUCCESS) {
 		LOG_ERR("SPI transfer failed (0x%X).", ret);
 		return ret;
-	}
+	}*/
+	printk("Fake transfer from main thread.\n");
 
 	return 0;
 }

@@ -15,6 +15,16 @@
 	pinctrl-names = "default";
 };
 
+&timer130 {
+	status = "okay";
+};
+
+&dppic133 {
+	status = "okay";
+	owned-channels = < 4 >; // Select an unused random channel ID
+	source-channels = < 4 >;
+};
+
 // Remove all features assigned to the SPIM131 pins
 / {
 	aliases {
