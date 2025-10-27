@@ -33,6 +33,7 @@
 		/delete-property/ led2;
 		/delete-property/ led3;
 		/delete-property/ pwm-led0;
+		/delete-property/ mcuboot-led0;
 	};
 
 	/delete-node/ leds;
