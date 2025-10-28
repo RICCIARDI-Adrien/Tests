@@ -8,7 +8,11 @@
 
 LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 
-#define TIMER_INSTANCE_ID 130
+#define TIMER_INSTANCE_ID 132
+#define TIMER_DT_NODE_LABEL timer132
+
+#define SPIM_INSTANCE_ID 131
+#define SPIM_DT_NODE_LABEL spi131
 
 struct driver_spi_config {
 	nrfx_spim_t spim_instance;
@@ -26,8 +30,8 @@ static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__
 
 static nrfx_spim_xfer_desc_t transfer_descriptor = NRFX_SPIM_XFER_TRX(transmission_buffer, 7, reception_buffer, 7);
 
-static NRF_TIMER_Type *pointerTimer = (NRF_TIMER_Type *) DT_REG_ADDR(DT_NODELABEL(timer130));
-static NRF_SPIM_Type *pointerSPIM = (NRF_SPIM_Type *) DT_REG_ADDR(DT_NODELABEL(spi131));
+static NRF_TIMER_Type *pointerTimer = (NRF_TIMER_Type *) DT_REG_ADDR(DT_NODELABEL(TIMER_DT_NODE_LABEL));
+static NRF_SPIM_Type *pointerSPIM = (NRF_SPIM_Type *) DT_REG_ADDR(DT_NODELABEL(SPIM_DT_NODE_LABEL));
 
 static void driver_spi_handler(nrfx_spim_evt_t const * p_event, void * p_context)
 {
@@ -53,7 +57,7 @@ static int driver_spi_init(const struct device *dev)
 	nrfx_timer_t timerInstance = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_ID);
 	nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG(1000000);
 	uint8_t gppiChannel;
-	uint32_t ticks;
+	uint32_t ticks, eventEndpoint, taskEndpoint;
 
 	LOG_DBG("Starting initialization.");
 
@@ -61,7 +65,7 @@ static int driver_spi_init(const struct device *dev)
 #ifdef NRF_RADIOCORE
 	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(132)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(132), 0, 0);
 #else
-	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(131)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(131), 0, 0);
+	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(SPIM_INSTANCE_ID)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(SPIM_INSTANCE_ID), 0, 0);
 #endif
 
 	// Initialize the selected timer
@@ -101,9 +105,10 @@ static int driver_spi_init(const struct device *dev)
 	}
 	LOG_DBG("Allocated GPPI channel : %u.", gppiChannel);
 
-	nrfx_gppi_channel_endpoints_setup(gppiChannel,
-		nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0),
-		nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START));
+	eventEndpoint = nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0);
+	taskEndpoint = nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START);
+	LOG_DBG("Event endpoint : 0x%08X, task endpoint : 0x%08X.", eventEndpoint, taskEndpoint);
+	nrfx_gppi_channel_endpoints_setup(gppiChannel, eventEndpoint, taskEndpoint);
 	nrfx_gppi_channels_enable(NRFX_BIT(gppiChannel));
 
 	// Start ticking the SPI transfers

@@ -15,14 +15,35 @@
 	pinctrl-names = "default";
 };
 
-&timer130 {
+&timer132 {
 	status = "okay";
+};
+
+/*
+ * DPPI connection from timer 132 to SPIM 131.
+ * Note that most of the PPI systems are connected only to the APB32 system.
+ *
+ * PPI system APB3B : TIMER132 -> DPPIC134 -> PPIB135 -> ...
+ * PPI system APB32 : ... -> PPIB130 -> DPPIC130 -> PPIB130 -> ...
+ * PPI system APB3A : ... -> PPIB134 -> DPPIC133 -> SPIM131
+ */
+&dppic134 {
+	status = "okay";
+	owned-channels = < 4 >;
+	source-channels = < 4 >;
+};
+
+&dppic130 {
+	status = "okay";
+	owned-channels = < 4 >;
+	source-channels = < 4 >;
+	sink-channels = < 4 >;
 };
 
 &dppic133 {
 	status = "okay";
-	owned-channels = < 4 >; // Select an unused random channel ID
-	source-channels = < 4 >;
+	owned-channels = < 4 >;
+	sink-channels = < 4 >;
 };
 
 // Remove all features assigned to the SPIM131 pins
