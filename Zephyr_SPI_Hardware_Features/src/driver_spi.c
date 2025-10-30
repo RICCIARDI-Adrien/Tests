@@ -14,6 +14,8 @@ LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 #define SPIM_INSTANCE_ID 131
 #define SPIM_DT_NODE_LABEL spi131
 
+#define DPPI_CHANNEL 4
+
 struct driver_spi_config {
 	nrfx_spim_t spim_instance;
 	const struct pinctrl_dev_config *pcfg;
@@ -38,6 +40,51 @@ static void driver_spi_handler(nrfx_spim_evt_t const * p_event, void * p_context
     LOG_DBG("Interrupt.");
 }
 
+static void configureDppi(void)
+{
+	uint32_t eventEndpoint, taskEndpoint;
+
+	eventEndpoint = nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0);
+	taskEndpoint = nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START);
+
+	// The high-level way
+	#if 0
+	{
+		uint8_t gppiChannel;
+		nrfx_err_t ret;
+
+		ret = nrfx_gppi_channel_alloc(&gppiChannel);
+		if (ret != NRFX_SUCCESS) {
+			LOG_ERR("Failed to allocate a GPPI channel.");
+			return;
+		}
+		LOG_DBG("Allocated GPPI channel : %u.", gppiChannel);
+
+		nrfx_gppi_channel_endpoints_setup(gppiChannel, eventEndpoint, taskEndpoint);
+		nrfx_gppi_channels_enable(NRFX_BIT(gppiChannel));
+	}
+	// The low-level way
+	#else
+	{
+		NRF_DPPIC_Type *pointerDPPIC;
+
+		NRF_DPPI_ENDPOINT_SETUP(eventEndpoint, DPPI_CHANNEL);
+		NRF_DPPI_ENDPOINT_SETUP(taskEndpoint, DPPI_CHANNEL);
+
+		// Enable the channel
+		// DPPIC134
+		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic134));
+		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+		// DPPIC130
+		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic130));
+		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+		// DPPIC133
+		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic133));
+		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+	}
+	#endif
+}
+
 static int driver_spi_init(const struct device *dev)
 {
 	const struct driver_spi_config *config = dev->config;
@@ -56,8 +103,7 @@ static int driver_spi_init(const struct device *dev)
 	nrfx_err_t ret;
 	nrfx_timer_t timerInstance = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_ID);
 	nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG(1000000);
-	uint8_t gppiChannel;
-	uint32_t ticks, eventEndpoint, taskEndpoint;
+	uint32_t ticks;
 
 	LOG_DBG("Starting initialization.");
 
@@ -98,18 +144,7 @@ static int driver_spi_init(const struct device *dev)
 		return ret;
 	}
 
-	ret = nrfx_gppi_channel_alloc(&gppiChannel);
-	if (ret != NRFX_SUCCESS) {
-		LOG_ERR("Failed to allocate a GPPI channel.");
-		return ret;
-	}
-	LOG_DBG("Allocated GPPI channel : %u.", gppiChannel);
-
-	eventEndpoint = nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0);
-	taskEndpoint = nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START);
-	LOG_DBG("Event endpoint : 0x%08X, task endpoint : 0x%08X.", eventEndpoint, taskEndpoint);
-	nrfx_gppi_channel_endpoints_setup(gppiChannel, eventEndpoint, taskEndpoint);
-	nrfx_gppi_channels_enable(NRFX_BIT(gppiChannel));
+	configureDppi();
 
 	// Start ticking the SPI transfers
 	nrfx_timer_enable(&timerInstance);
