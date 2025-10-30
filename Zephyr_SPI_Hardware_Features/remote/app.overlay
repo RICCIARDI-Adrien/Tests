@@ -1,4 +1,19 @@
-&timer022 {
+&timer132 {
 	status = "okay";
 };
 
+/*
+ * DPPI connection from timer 132 to SPIM 131.
+ * Note that most of the PPI systems are connected only to the APB32 system.
+ *
+ * PPI system APB3B : TIMER132 -> DPPIC134 -> PPIB135 -> ...
+ * PPI system APB32 : ... -> PPIB130 -> DPPIC130 -> PPIB130 -> ...
+ * PPI system APB3A : ... -> PPIB134 -> DPPIC133 -> SPIM131
+ *
+ * Take the ownership of only the APB3B DPPIC to manage the TIMER132 from the Radio core.
+ */
+&dppic134 {
+	status = "okay";
+	owned-channels = < 4 >;
+	source-channels = < 4 >;
+};

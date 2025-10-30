@@ -1,15 +1,11 @@
-#include <helpers/nrfx_gppi.h>
+#include <nrfx_dppi.h>
 #include <nrfx_spim.h>
-#include <nrfx_timer.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
-
-#define TIMER_INSTANCE_ID 132
-#define TIMER_DT_NODE_LABEL timer132
 
 #define SPIM_INSTANCE_ID 131
 #define SPIM_DT_NODE_LABEL spi131
@@ -32,7 +28,6 @@ static unsigned char __attribute__((__section__(BUFFERS_SECTION))) __attribute__
 
 static nrfx_spim_xfer_desc_t transfer_descriptor = NRFX_SPIM_XFER_TRX(transmission_buffer, 7, reception_buffer, 7);
 
-static NRF_TIMER_Type *pointerTimer = (NRF_TIMER_Type *) DT_REG_ADDR(DT_NODELABEL(TIMER_DT_NODE_LABEL));
 static NRF_SPIM_Type *pointerSPIM = (NRF_SPIM_Type *) DT_REG_ADDR(DT_NODELABEL(SPIM_DT_NODE_LABEL));
 
 static void driver_spi_handler(nrfx_spim_evt_t const * p_event, void * p_context)
@@ -42,47 +37,20 @@ static void driver_spi_handler(nrfx_spim_evt_t const * p_event, void * p_context
 
 static void configureDppi(void)
 {
-	uint32_t eventEndpoint, taskEndpoint;
+	uint32_t taskEndpoint;
+	NRF_DPPIC_Type *pointerDPPIC;
 
-	eventEndpoint = nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0);
 	taskEndpoint = nrf_spim_task_address_get(pointerSPIM, NRF_SPIM_TASK_START);
 
-	// The high-level way
-	#if 0
-	{
-		uint8_t gppiChannel;
-		nrfx_err_t ret;
+	NRF_DPPI_ENDPOINT_SETUP(taskEndpoint, DPPI_CHANNEL);
 
-		ret = nrfx_gppi_channel_alloc(&gppiChannel);
-		if (ret != NRFX_SUCCESS) {
-			LOG_ERR("Failed to allocate a GPPI channel.");
-			return;
-		}
-		LOG_DBG("Allocated GPPI channel : %u.", gppiChannel);
-
-		nrfx_gppi_channel_endpoints_setup(gppiChannel, eventEndpoint, taskEndpoint);
-		nrfx_gppi_channels_enable(NRFX_BIT(gppiChannel));
-	}
-	// The low-level way
-	#else
-	{
-		NRF_DPPIC_Type *pointerDPPIC;
-
-		NRF_DPPI_ENDPOINT_SETUP(eventEndpoint, DPPI_CHANNEL);
-		NRF_DPPI_ENDPOINT_SETUP(taskEndpoint, DPPI_CHANNEL);
-
-		// Enable the channel
-		// DPPIC134
-		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic134));
-		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
-		// DPPIC130
-		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic130));
-		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
-		// DPPIC133
-		pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic133));
-		nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
-	}
-	#endif
+	// Enable the channel
+	// DPPIC130
+	pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic130));
+	nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+	// DPPIC133
+	pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic133));
+	nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
 }
 
 static int driver_spi_init(const struct device *dev)
@@ -101,9 +69,6 @@ static int driver_spi_init(const struct device *dev)
 		.skip_psel_cfg = false // There is a bug in the NRF API that skips setting the hardware /CS feature if PSELs are not configured
 	};
 	nrfx_err_t ret;
-	nrfx_timer_t timerInstance = NRFX_TIMER_INSTANCE(TIMER_INSTANCE_ID);
-	nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG(1000000);
-	uint32_t ticks;
 
 	LOG_DBG("Starting initialization.");
 
@@ -114,21 +79,8 @@ static int driver_spi_init(const struct device *dev)
 	IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(SPIM_INSTANCE_ID)), IRQ_PRIO_LOWEST, NRFX_SPIM_INST_HANDLER_GET(SPIM_INSTANCE_ID), 0, 0);
 #endif
 
-	// Initialize the selected timer
-	timer_config.bit_width = NRF_TIMER_BIT_WIDTH_32;
-	ret = nrfx_timer_init(&timerInstance, &timer_config, NULL);
-	if (ret != NRFX_SUCCESS) {
-		printk("Error : failed to initialize the timer (%d).", ret);
-		return -1;
-	}
-	nrfx_timer_clear(&timerInstance);
-
-	// Configure the timer channel 0 to overflow each 200ms
-	ticks = nrfx_timer_us_to_ticks(&timerInstance, 200000);
-	nrfx_timer_extended_compare(&timerInstance, NRF_TIMER_CC_CHANNEL0, ticks, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
-
 	ret = nrfx_spim_init(&config->spim_instance, &spim_config, driver_spi_handler, NULL);
-    if (ret != NRFX_SUCCESS) {
+	if (ret != NRFX_SUCCESS) {
 		LOG_ERR("Failed to initialize the SPIM peripheral.");
 		return ret;
 	}
@@ -145,9 +97,6 @@ static int driver_spi_init(const struct device *dev)
 	}
 
 	configureDppi();
-
-	// Start ticking the SPI transfers
-	nrfx_timer_enable(&timerInstance);
 
 	return 0;
 }
