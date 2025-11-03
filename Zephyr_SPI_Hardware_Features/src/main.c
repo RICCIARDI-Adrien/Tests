@@ -1,3 +1,4 @@
+#include "driver_spi.h"
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/spi.h>
 
@@ -5,7 +6,7 @@ static const struct device *spi_device = DEVICE_DT_GET(DT_NODELABEL(spi131));
 
 int main(void)
 {
-	int ret;
+	int ret, i = 0;
 	uint8_t buffer[16];
 	struct spi_buf buffers_descriptor = {
 		.buf = buffer
@@ -18,13 +19,25 @@ int main(void)
 		.operation = SPI_OP_MODE_MASTER | SPI_LINES_SINGLE | SPI_MODE_CPOL | SPI_MODE_CPHA | SPI_WORD_SET(8)
 	};
 
-	printk("App core is starting.\n");
+	printk("App core is starting with DPPI polling disabled.\n");
 
 	while (1) {
 		memcpy(buffer, "SALUT !", 7);
 		ret = spi_write(spi_device, &spi_config, &buffers_set);
 
 		k_msleep(1000);
+
+		i++;
+		if (i == 5) {
+			printk("Enabling DPPI polling after 5s.\n");
+			enableDPPIPolling(true);
+		} else if (i == 12) {
+			printk("Stopping DPPI polling after 7s.\n");
+			enableDPPIPolling(false);
+		} else if (i == 18) {
+			printk("Enabling DPPI polling again after 6s.\n");
+			enableDPPIPolling(true);
+		}
 	}
 
 	return 0;

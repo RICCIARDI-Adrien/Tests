@@ -5,6 +5,8 @@
 #include <zephyr/drivers/spi.h>
 #include <zephyr/logging/log.h>
 
+#include "driver_spi.h"
+
 LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 
 #define SPIM_INSTANCE_ID 131
@@ -51,6 +53,8 @@ static void configureDppi(void)
 	// DPPIC133
 	pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic133));
 	nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+
+	enableDPPIPolling(false);
 }
 
 static int driver_spi_init(const struct device *dev)
@@ -119,6 +123,14 @@ static int driver_spi_transceive(const struct device *dev, const struct spi_conf
 	printk("Fake transfer from main thread.\n");
 
 	return 0;
+}
+
+void enableDPPIPolling(bool isEnabled)
+{
+	if (isEnabled)
+		pointerSPIM->SUBSCRIBE_START |= 0x80000000;
+	else
+		pointerSPIM->SUBSCRIBE_START &= 0x7FFFFFFF;
 }
 
 static DEVICE_API(spi, driver_spi_api) = {
