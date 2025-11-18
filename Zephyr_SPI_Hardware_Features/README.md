@@ -16,7 +16,7 @@ nrfutil sdk-manager toolchain launch --ncs-version v3.2.0-preview2 --shell
 source ~/ncs/v3.2.0-preview2/zephyr/zephyr-env.sh
 
 # Build the firmware
-west build --sysbuild -p -b nrf54h20dk/nrf54h20/cpuapp .
+west build -p -b nrf54h20dk/nrf54h20/cpuapp -T ./timer132
 
 # Flash the firmware
 west flash
