@@ -1,3 +1,4 @@
+#include <hal/nrf_ipct.h>
 #include <nrfx_dppi.h>
 #include <nrfx_timer.h>
 #include <zephyr/kernel.h>
@@ -5,8 +6,21 @@
 
 LOG_MODULE_REGISTER(radiocore, LOG_LEVEL_DBG);
 
-#define TIMER_DT_NODE_LABEL timer132
-#define TIMER_INSTANCE_ID 132
+#ifdef CONFIG_NRFX_TIMER132
+	#define USE_TIMER132
+#endif
+
+#ifdef USE_TIMER132
+	#define TIMER_DT_NODE_LABEL timer132
+	#define TIMER_INSTANCE_ID 132
+
+	#define DPPIC_DT_NODE_LABEL dppic134
+#else
+	#define TIMER_DT_NODE_LABEL timer022
+	#define TIMER_INSTANCE_ID 022
+
+	#define DPPIC_DT_NODE_LABEL dppic020
+#endif
 
 #define DPPI_CHANNEL 4
 
@@ -35,9 +49,17 @@ static void configureDPPI(void)
 	eventEndpoint = nrf_timer_event_address_get(pointerTimer, NRF_TIMER_EVENT_COMPARE0);
 	NRF_DPPI_ENDPOINT_SETUP(eventEndpoint, DPPI_CHANNEL);
 
-	// DPPIC134
-	pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(dppic134));
+	pointerDPPIC = (NRF_DPPIC_Type *) DT_REG_ADDR(DT_NODELABEL(DPPIC_DT_NODE_LABEL));
 	nrf_dppi_channels_enable(pointerDPPIC, 1 << DPPI_CHANNEL);
+
+	// Connect the IPCT channel to the DPPI channel when needed
+	#ifndef USE_TIMER132
+	{
+		NRF_IPCT_Type *pointerIPCT = (NRF_IPCT_Type *) DT_REG_ADDR(DT_NODELABEL(cpurad_ipct));
+
+		nrf_ipct_subscribe_set(pointerIPCT, NRF_IPCT_TASK_SEND_0, DPPI_CHANNEL);
+	}
+	#endif
 }
 
 int main(void)

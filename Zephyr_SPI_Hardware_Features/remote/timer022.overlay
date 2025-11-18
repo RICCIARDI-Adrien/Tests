@@ -1,0 +1,24 @@
+&timer022 {
+	status = "okay";
+};
+
+/*
+ * DPPI connection from timer 022 to SPIM 131.
+ * Note that most of the PPI systems are connected only to the APB32 system.
+ *
+ * Radio core local domain : TIMER022 -> DPPIC020 -> IPCT -> ...
+ * Global domain :
+ * PPI system APB32 : ... -> IPCT130 -> PPIB130 -> DPPIC130 -> PPIB130 -> ...
+ * PPI system APB3A : ... -> PPIB134 -> DPPIC133 -> SPIM131
+ */
+&cpurad_ipct {
+	status = "okay";
+	// Keep the already attributed channel link #2
+	source-channel-links = <2 NRF_DOMAIN_ID_GLOBALSLOW 2>, <6 NRF_DOMAIN_ID_GLOBALSLOW 6>;
+};
+
+&dppic020 {
+	status = "okay";
+	// This is a local DPPIC instance, so there is no "owned-channels" property
+	source-channels = < 4 >;
+};

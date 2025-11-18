@@ -1,10 +1,14 @@
 common:
+  platform_allow:
+    - nrf54h20dk/nrf54h20/cpuapp
   sysbuild: true
 
 tests:
   timer132:
-    platform_allow:
-      - nrf54h20dk/nrf54h20/cpuapp
     extra_args:
       - remote_DTC_OVERLAY_FILE=timer132.overlay
       - remote_CONFIG_NRFX_TIMER132=y
+  timer022:
+    extra_args:
+      - remote_DTC_OVERLAY_FILE=timer022.overlay
+      - remote_CONFIG_NRFX_TIMER022=y
