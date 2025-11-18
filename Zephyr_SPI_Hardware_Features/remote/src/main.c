@@ -6,10 +6,6 @@
 
 LOG_MODULE_REGISTER(radiocore, LOG_LEVEL_DBG);
 
-#ifdef CONFIG_NRFX_TIMER132
-	#define USE_TIMER132
-#endif
-
 #ifdef USE_TIMER132
 	#define TIMER_DT_NODE_LABEL timer132
 	#define TIMER_INSTANCE_ID 132
