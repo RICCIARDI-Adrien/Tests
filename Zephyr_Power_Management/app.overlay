@@ -1,0 +1,11 @@
+// Remove the suspend to RAM state
+&cpuapp {
+	cpu-power-states = < &idle_cache_disabled >;
+};
+/ {
+	cpus {
+		power-states {
+			/delete-node/ s2ram;
+		};
+	};
+};
