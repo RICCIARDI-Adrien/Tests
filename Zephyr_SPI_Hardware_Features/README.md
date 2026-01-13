@@ -1,5 +1,7 @@
 # Setup instructions
 
+**Note :** These instructions are not needed for NCS versions >= 3.2.0.
+
 You need first to enter the NCS shell before running the following commands, see the build instructions for more details.
 
 ```
@@ -11,9 +13,11 @@ west patch apply
 # Build instructions
 
 ```
+export NCS_VERSION=v3.2.1
+
 # Enter the NCS shell
-nrfutil sdk-manager toolchain launch --ncs-version v3.2.0-preview2 --shell
-source ~/ncs/v3.2.0-preview2/zephyr/zephyr-env.sh
+nrfutil sdk-manager toolchain launch --ncs-version ${NCS_VERSION} --shell
+source ~/ncs/${NCS_VERSION}/zephyr/zephyr-env.sh
 
 # Build the firmware
 west build -p -b nrf54h20dk/nrf54h20/cpuapp -T ./timer132
