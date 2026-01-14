@@ -7,7 +7,8 @@ tests:
   timer132:
     extra_args:
       - EXTRA_CFLAGS=-DUSE_TIMER132=1
-      - remote_DTC_OVERLAY_FILE=timer132.overlay
+      - remote_EXTRA_DTC_OVERLAY_FILE=timer132.overlay
   timer022:
     extra_args:
-      - remote_DTC_OVERLAY_FILE=timer022.overlay
+      - EXTRA_DTC_OVERLAY_FILE=timer022.overlay
+      - remote_EXTRA_DTC_OVERLAY_FILE=timer022.overlay

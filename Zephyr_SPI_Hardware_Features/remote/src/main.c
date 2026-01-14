@@ -23,7 +23,9 @@ LOG_MODULE_REGISTER(radiocore, LOG_LEVEL_DBG);
 #define DPPI_CHANNEL 4
 
 static nrfx_timer_t timerInstance = NRFX_TIMER_INSTANCE(NRF_TIMER_INST_GET(TIMER_INSTANCE_ID));
+#ifndef USE_TIMER132
 static NRF_IPCT_Type *ipctRegisters = (NRF_IPCT_Type *) DT_REG_ADDR(DT_NODELABEL(IPCT_DT_NODE_LABEL));
+#endif
 
 static void timerInterruptHandler(nrf_timer_event_t event_type, void *p_context)
 {
@@ -63,7 +65,16 @@ static void configureDPPI(void)
 		int ret;
 
 		sourceEndpoint = nrf_timer_event_address_get(timerInstance.p_reg, NRF_TIMER_EVENT_COMPARE0);
-		destinationEndpoint = nrf_ipct_task_address_get(ipctRegisters, NRF_IPCT_TASK_SEND_0);
+		destinationEndpoint = nrf_ipct_task_address_get(ipctRegisters, NRF_IPCT_TASK_SEND_4);
+
+		ret = nrfx_gppi_conn_alloc(sourceEndpoint, destinationEndpoint, &gppiHandle);
+		if (ret != 0)
+		{
+			printk("Error : failed to allocated a GPPI connection (0x%08X).\n", ret);
+			return;
+		}
+
+		nrfx_gppi_conn_enable(gppiHandle);
 	}
 	#endif
 }

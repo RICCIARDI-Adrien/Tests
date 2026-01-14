@@ -1,3 +1,4 @@
+#include <hal/nrf_ipct.h>
 #include <helpers/nrfx_gppi.h>
 #include <nrfx_spim.h>
 #include <zephyr/kernel.h>
@@ -15,6 +16,10 @@ LOG_MODULE_REGISTER(driver_spi, LOG_LEVEL_DBG);
 #define SPIM_DT_NODE_LABEL spi131
 
 #define DPPI_CHANNEL 4
+
+#ifndef USE_TIMER132
+	#define IPCT_DT_NODE_LABEL ipct130
+#endif
 
 struct driver_spi_config {
 	void (*irq_connect)(void);
@@ -34,12 +39,16 @@ static nrfx_spim_xfer_desc_t transfer_descriptor = NRFX_SPIM_XFER_TRX(transmissi
 
 static NRF_SPIM_Type *pointerSPIM = (NRF_SPIM_Type *) DT_REG_ADDR(DT_NODELABEL(SPIM_DT_NODE_LABEL));
 
+#ifndef USE_TIMER132
+static NRF_IPCT_Type *ipctRegisters = (NRF_IPCT_Type *) DT_REG_ADDR(DT_NODELABEL(IPCT_DT_NODE_LABEL));
+#endif
+
 static void driver_spi_handler(nrfx_spim_event_t const * p_event, void * p_context)
 {
     LOG_DBG("Interrupt.");
 }
 
-static void configureDppi(void)
+static void configureDppi(const struct device *dev)
 {
 #if 0
 	uint32_t taskEndpoint;
@@ -59,6 +68,31 @@ static void configureDppi(void)
 
 	enableDPPIPolling(false);
 #endif
+
+
+	#ifdef USE_TIMER132
+		#error "TODO"
+	#else
+		struct driver_spi_data *data = dev->data;
+		uint32_t sourceEndpoint, destinationEndpoint;
+		nrfx_gppi_handle_t gppiHandle;
+		int ret;
+
+		sourceEndpoint = nrf_ipct_event_address_get(ipctRegisters, NRF_IPCT_EVENT_RECEIVE_4);
+		destinationEndpoint = nrf_spim_task_address_get(data->spim_instance.p_reg, NRF_SPIM_TASK_START);
+
+		ret = nrfx_gppi_conn_alloc(sourceEndpoint, destinationEndpoint, &gppiHandle);
+		if (ret != 0)
+		{
+			printk("Error : failed to allocated a GPPI connection (0x%08X).\n", ret);
+			return;
+		}
+
+		// The receiver needs to acknowledge each event, offload this to the hardware
+		nrf_ipct_shorts_enable(ipctRegisters, 1 << 4);
+
+		nrfx_gppi_conn_enable(gppiHandle);
+	#endif
 }
 
 static int driver_spi_init(const struct device *dev)
@@ -100,7 +134,7 @@ static int driver_spi_init(const struct device *dev)
 		return ret;
 	}
 
-	configureDppi();
+	configureDppi(dev);
 
 	LOG_DBG("Initialization succeeded.");
 
@@ -109,7 +143,7 @@ static int driver_spi_init(const struct device *dev)
 
 static int driver_spi_transceive(const struct device *dev, const struct spi_config *spi_cfg, const struct spi_buf_set *tx_bufs, const struct spi_buf_set *rx_bufs)
 {
-#if 1
+#if 0
 	struct driver_spi_data *data = dev->data;
 	int ret;
 
@@ -124,6 +158,11 @@ static int driver_spi_transceive(const struct device *dev, const struct spi_conf
 		return ret;
 	}
 #else
+	ARG_UNUSED(dev);
+	ARG_UNUSED(spi_cfg);
+	ARG_UNUSED(tx_bufs);
+	ARG_UNUSED(rx_bufs);
+
 	printk("Fake transfer from main thread.\n");
 #endif
 

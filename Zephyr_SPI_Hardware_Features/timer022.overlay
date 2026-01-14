@@ -1,0 +1,12 @@
+/*
+ * DPPI connection from IPCT130 to the SPIM131.
+ *
+ * Global domain :
+ * PPI system APB32 : ... -> IPCT130 -> PPIB130 -> DPPIC130 -> PPIB130 -> ...
+ * PPI system APB3A : ... -> PPIB134 -> DPPIC133 -> SPIM131
+ */
+&ipct130 {
+	status = "okay";
+	owned-channels = < 4 >;
+	sink-channel-links = < 4 NRF_DOMAIN_ID_RADIOCORE 4 >;
+};
