@@ -1,10 +1,13 @@
 &sercom2 {
 	status = "okay";
 
+	// See dts/bindings/input/cirque,pinnacle-common.yaml for the available settings
 	trackpad: cirque-trackpad@2a {
 		compatible = "cirque,pinnacle";
 		status = "okay";
 		reg = < 0x2A >; // The trackpad I2C address
-		data-ready-gpios = < &porta 6 GPIO_ACTIVE_LOW >;
+		data-ready-gpios = < &porta 6 0 >;
+		sensitivity = "2x"; // 4x does not detect anything, 1x is way too sensible
+		data-mode = "absolute"; // Return absolute positions to ease debugging
 	};
 };
