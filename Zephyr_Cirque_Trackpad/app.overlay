@@ -1,0 +1,10 @@
+&sercom2 {
+	status = "okay";
+
+	trackpad: cirque-trackpad@2a {
+		compatible = "cirque,pinnacle";
+		status = "okay";
+		reg = < 0x2A >; // The trackpad I2C address
+		data-ready-gpios = < &porta 6 GPIO_ACTIVE_LOW >;
+	};
+};

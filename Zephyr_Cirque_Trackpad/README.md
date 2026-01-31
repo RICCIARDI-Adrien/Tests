@@ -1,3 +1,14 @@
+# Setup instructions
+
+The test has been done with a Cirque `TM035035-2024-003` trackpad converted to I2C (by unpopulating `R1`).
+
+Connections :
+SAMD21 board PWR connector `GND` : trackpad `GND`
+SAMD21 board PWR connector `VCC` : trackpad `VDD`
+SAMD21 board EXT1 connector `PA06` : trackpad DR (data ready)
+SAMD21 board EXT1 connector `PA08` : trackpad I2C SDA
+SAMD21 board EXT1 connector `PA09` : trackpad I2C SCL
+
 # Build instructions
 
 ```
