@@ -13,12 +13,19 @@ typedef struct
 } TUSBConfigurationData;
 
 USBD_DEVICE_DEFINE(USB_Context_0, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_VID_ZEPHYR, 0xFADA);
+USBD_DEVICE_DEFINE(USB_Context_1, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc1)), USB_VID_ZEPHYR, 0xBEEF);
 
 USBD_DESC_LANG_DEFINE(USB_Descriptor_Language_0);
 USBD_DESC_MANUFACTURER_DEFINE(USB_Descriptor_String_Manufacturer_0, "Saucisson");
 USBD_DESC_PRODUCT_DEFINE(USB_Descriptor_String_Product_0, "Fromage");
 USBD_DESC_CONFIG_DEFINE(USB_Descriptor_String_Configuration_0, "Premiere config");
 USBD_CONFIGURATION_DEFINE(USB_Configuration_0, 0, 100, &USB_Descriptor_String_Configuration_0);
+
+USBD_DESC_LANG_DEFINE(USB_Descriptor_Language_1);
+USBD_DESC_MANUFACTURER_DEFINE(USB_Descriptor_String_Manufacturer_1, "Vin");
+USBD_DESC_PRODUCT_DEFINE(USB_Descriptor_String_Product_1, "Armagnac");
+USBD_DESC_CONFIG_DEFINE(USB_Descriptor_String_Configuration_1, "Deuxieme config");
+USBD_CONFIGURATION_DEFINE(USB_Configuration_1, 0, 100, &USB_Descriptor_String_Configuration_1);
 
 static TUSBConfigurationData USB_Configuration_Datas[] =
 {
@@ -29,6 +36,14 @@ static TUSBConfigurationData USB_Configuration_Datas[] =
 		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_0,
 		.Pointer_Descriptor_String_Configuration_Name = &USB_Descriptor_String_Configuration_0,
 		.Pointer_Descriptor_Configuration = &USB_Configuration_0
+	},
+	// Configuration 1
+	{
+		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_1,
+		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_1,
+		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_1,
+		.Pointer_Descriptor_String_Configuration_Name = &USB_Descriptor_String_Configuration_1,
+		.Pointer_Descriptor_Configuration = &USB_Configuration_1
 	}
 };
 
@@ -95,6 +110,12 @@ int main(void)
 	if (ConfigureUSB(&USB_Context_0, &USB_Configuration_Datas[0]) != 0)
 	{
 		printk("Error : USB device 0 configuration failed.");
+		return -1;
+	}
+
+	if (ConfigureUSB(&USB_Context_1, &USB_Configuration_Datas[1]) != 0)
+	{
+		printk("Error : USB device 1 configuration failed.");
 		return -1;
 	}
 

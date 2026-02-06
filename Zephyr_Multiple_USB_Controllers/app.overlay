@@ -1,6 +1,21 @@
 &zephyr_udc0 {
 	cdc_acm_uart0 {
 		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
 		label = "Zephyr USB CDC-ACM 0";
+	};
+};
+
+zephyr_udc1: &usbotg_hs {
+	status = "okay";
+	maximum-speed = "full-speed"; // Force full speed to be able to use the internal PHY
+	pinctrl-0 = < &usb_otg_hs_dm_pb14 &usb_otg_hs_dp_pb15 >;
+	pinctrl-names = "default";
+
+	cdc_ecm_ethernet {
+		compatible = "zephyr,cdc-ecm-ethernet";
+		status = "okay";
+		label = "Zephyr USB CDC-ECM";
+		remote-mac-address = "01:23:45:78:89:AB";
 	};
 };
