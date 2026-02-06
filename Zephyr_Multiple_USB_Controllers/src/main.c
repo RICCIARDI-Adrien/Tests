@@ -49,6 +49,7 @@ static TUSBConfigurationData USB_Configuration_Datas[] =
 
 static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurationData *Pointer_Configuration_Data)
 {
+	static int Configurations_Count = 0;
 	int Result;
 
 	Result = usbd_add_descriptor(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_Descriptor_String_Language);
@@ -79,11 +80,14 @@ static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurat
 		return -1;
 	}
 
-	Result = usbd_register_all_classes(Pointer_USB_Context, USBD_SPEED_FS, 1, NULL);
-	if (Result != 0)
+	if (Configurations_Count == 0)
 	{
-		printk("Failed to register all classes (%d).", Result);
-		return -1;
+		Result = usbd_register_all_classes(Pointer_USB_Context, USBD_SPEED_FS, 1, NULL);
+		if (Result != 0)
+		{
+			printk("Failed to register all classes (%d).", Result);
+			return -1;
+		}
 	}
 
 	Result = usbd_init(Pointer_USB_Context);
@@ -100,6 +104,7 @@ static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurat
 		return -1;
 	}
 
+	Configurations_Count++;
 	return 0;
 }
 
