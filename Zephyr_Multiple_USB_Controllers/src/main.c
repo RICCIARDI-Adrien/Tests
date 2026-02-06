@@ -1,45 +1,63 @@
 #include <zephyr/kernel.h>
 #include <zephyr/usb/usbd.h>
 
-#define USB_VID_ZEPHYR 0x2fe3
-#define USB_PID_PRODUCT 0xcaca
+#define USB_VID_ZEPHYR 0x2FE3
 
-USBD_DEVICE_DEFINE(USB_Context_0, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_VID_ZEPHYR, USB_PID_PRODUCT);
+typedef struct
+{
+	struct usbd_desc_node *Pointer_Descriptor_String_Language;
+	struct usbd_desc_node *Pointer_Descriptor_String_Manufacturer;
+	struct usbd_desc_node *Pointer_Descriptor_String_Product;
+	struct usbd_desc_node *Pointer_Descriptor_String_Configuration_Name;
+	struct usbd_config_node *Pointer_Descriptor_Configuration;
+} TUSBConfigurationData;
 
-USBD_DESC_LANG_DEFINE(USB_Descriptor_Language);
-USBD_DESC_MANUFACTURER_DEFINE(USB_Descriptor_String_Manufacturer, "Saucisson");
-USBD_DESC_PRODUCT_DEFINE(USB_Descriptor_String_Product, "Fromage");
+USBD_DEVICE_DEFINE(USB_Context_0, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_VID_ZEPHYR, 0xFADA);
 
-USBD_DESC_CONFIG_DEFINE(USB_Descriptor_Configuration, "FS Configuration");
+USBD_DESC_LANG_DEFINE(USB_Descriptor_Language_0);
+USBD_DESC_MANUFACTURER_DEFINE(USB_Descriptor_String_Manufacturer_0, "Saucisson");
+USBD_DESC_PRODUCT_DEFINE(USB_Descriptor_String_Product_0, "Fromage");
+USBD_DESC_CONFIG_DEFINE(USB_Descriptor_String_Configuration_0, "Premiere config");
+USBD_CONFIGURATION_DEFINE(USB_Configuration_0, 0, 100, &USB_Descriptor_String_Configuration_0);
 
-USBD_CONFIGURATION_DEFINE(USB_Configuration, 0, 100, &USB_Descriptor_Configuration);
+static TUSBConfigurationData USB_Configuration_Datas[] =
+{
+	// Configuration 0
+	{
+		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_0,
+		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_0,
+		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_0,
+		.Pointer_Descriptor_String_Configuration_Name = &USB_Descriptor_String_Configuration_0,
+		.Pointer_Descriptor_Configuration = &USB_Configuration_0
+	}
+};
 
-int ConfigureUSB(struct usbd_context *Pointer_USB_Context)
+static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurationData *Pointer_Configuration_Data)
 {
 	int Result;
 
-	Result = usbd_add_descriptor(Pointer_USB_Context, &USB_Descriptor_Language);
+	Result = usbd_add_descriptor(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_Descriptor_String_Language);
 	if (Result != 0)
 	{
 		printk("Failed to initialize language descriptor (%d).", Result);
 		return -1;
 	}
 
-	Result = usbd_add_descriptor(Pointer_USB_Context, &USB_Descriptor_String_Manufacturer);
+	Result = usbd_add_descriptor(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_Descriptor_String_Manufacturer);
 	if (Result != 0)
 	{
 		printk("Failed to initialize manufacturer descriptor (%d).", Result);
 		return -1;
 	}
 
-	Result = usbd_add_descriptor(Pointer_USB_Context, &USB_Descriptor_String_Product);
+	Result = usbd_add_descriptor(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_Descriptor_String_Product);
 	if (Result != 0)
 	{
 		printk("Failed to initialize product descriptor (%d).", Result);
 		return -1;
 	}
 
-	Result = usbd_add_configuration(Pointer_USB_Context, USBD_SPEED_FS, &USB_Configuration);
+	Result = usbd_add_configuration(Pointer_USB_Context, USBD_SPEED_FS, Pointer_Configuration_Data->Pointer_Descriptor_Configuration);
 	if (Result != 0)
 	{
 		printk("Failed to add Full-Speed configuration (%d).", Result);
@@ -74,7 +92,7 @@ int main(void)
 {
 	printk("Starting application.\n");
 
-	if (ConfigureUSB(&USB_Context_0) != 0)
+	if (ConfigureUSB(&USB_Context_0, &USB_Configuration_Datas[0]) != 0)
 	{
 		printk("Error : USB device 0 configuration failed.");
 		return -1;
