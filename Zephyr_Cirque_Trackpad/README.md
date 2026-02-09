@@ -1,5 +1,14 @@
 # Setup instructions
 
+## Linux development computer
+
+To be able to flash the firmware with `west flash`, create an `udev` rule with the following content :
+```
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2169", MODE="0666", GROUP="plugdev"
+```
+
+## Board connections
+
 The test has been done with a Cirque `TM035035-2024-003` trackpad converted to I2C (by unpopulating `R1`) connected to a Microchip SAMD21 Xplained Pro board.
 
 Connections :
