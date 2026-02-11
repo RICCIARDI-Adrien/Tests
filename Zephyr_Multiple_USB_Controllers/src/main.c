@@ -8,7 +8,6 @@ typedef struct
 	struct usbd_desc_node *Pointer_Descriptor_String_Language;
 	struct usbd_desc_node *Pointer_Descriptor_String_Manufacturer;
 	struct usbd_desc_node *Pointer_Descriptor_String_Product;
-	struct usbd_desc_node *Pointer_Descriptor_String_Configuration_Name;
 	struct usbd_config_node *Pointer_Descriptor_Configuration;
 } TUSBConfigurationData;
 
@@ -34,7 +33,6 @@ static TUSBConfigurationData USB_Configuration_Datas[] =
 		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_0,
 		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_0,
 		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_0,
-		.Pointer_Descriptor_String_Configuration_Name = &USB_Descriptor_String_Configuration_0,
 		.Pointer_Descriptor_Configuration = &USB_Configuration_0
 	},
 	// Configuration 1
@@ -42,7 +40,6 @@ static TUSBConfigurationData USB_Configuration_Datas[] =
 		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_1,
 		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_1,
 		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_1,
-		.Pointer_Descriptor_String_Configuration_Name = &USB_Descriptor_String_Configuration_1,
 		.Pointer_Descriptor_Configuration = &USB_Configuration_1
 	}
 };
