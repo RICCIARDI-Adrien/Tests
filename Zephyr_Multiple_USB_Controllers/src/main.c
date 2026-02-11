@@ -9,6 +9,7 @@ typedef struct
 	struct usbd_desc_node *Pointer_Descriptor_String_Manufacturer;
 	struct usbd_desc_node *Pointer_Descriptor_String_Product;
 	struct usbd_config_node *Pointer_Descriptor_Configuration;
+	const char *Pointer_String_Class_Name;
 } TUSBConfigurationData;
 
 USBD_DEVICE_DEFINE(USB_Context_0, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_VID_ZEPHYR, 0xFADA);
@@ -33,20 +34,21 @@ static TUSBConfigurationData USB_Configuration_Datas[] =
 		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_0,
 		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_0,
 		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_0,
-		.Pointer_Descriptor_Configuration = &USB_Configuration_0
+		.Pointer_Descriptor_Configuration = &USB_Configuration_0,
+		.Pointer_String_Class_Name = "cdc_acm_0"
 	},
 	// Configuration 1
 	{
 		.Pointer_Descriptor_String_Language = &USB_Descriptor_Language_1,
 		.Pointer_Descriptor_String_Manufacturer = &USB_Descriptor_String_Manufacturer_1,
 		.Pointer_Descriptor_String_Product = &USB_Descriptor_String_Product_1,
-		.Pointer_Descriptor_Configuration = &USB_Configuration_1
+		.Pointer_Descriptor_Configuration = &USB_Configuration_1,
+		.Pointer_String_Class_Name = "cdc_acm_1"
 	}
 };
 
 static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurationData *Pointer_Configuration_Data)
 {
-	static int Configurations_Count = 0;
 	int Result;
 
 	Result = usbd_add_descriptor(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_Descriptor_String_Language);
@@ -77,20 +79,18 @@ static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurat
 		return -1;
 	}
 
-	if (Configurations_Count == 0)
+	// Register the class belonging to each USB controller
+	Result = usbd_register_class(Pointer_USB_Context, Pointer_Configuration_Data->Pointer_String_Class_Name, USBD_SPEED_FS, 1);
+	if (Result != 0)
 	{
-		Result = usbd_register_all_classes(Pointer_USB_Context, USBD_SPEED_FS, 1, NULL);
-		if (Result != 0)
-		{
-			printk("Failed to register all classes (%d).", Result);
-			return -1;
-		}
+		printk("Failed to register the class \"%s\" to the controller \"%s\" (%d).", Pointer_Configuration_Data->Pointer_String_Class_Name, Pointer_USB_Context->name, Result);
+		return -1;
 	}
 
 	Result = usbd_init(Pointer_USB_Context);
 	if (Result != 0)
 	{
-		printk("Failed to initialize the UDC0 device support.");
+		printk("Failed to initialize the UDC \"%s\" device support (%d).", Pointer_USB_Context->name, Result);
 		return -1;
 	}
 
@@ -101,7 +101,6 @@ static int ConfigureUSB(struct usbd_context *Pointer_USB_Context, TUSBConfigurat
 		return -1;
 	}
 
-	Configurations_Count++;
 	return 0;
 }
 
