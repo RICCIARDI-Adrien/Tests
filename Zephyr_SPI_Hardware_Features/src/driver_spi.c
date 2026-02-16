@@ -89,7 +89,7 @@ static void configureDppi(const struct device *dev)
 		}
 
 		// The receiver needs to acknowledge each event, offload this to the hardware
-		nrf_ipct_shorts_enable(ipctRegisters, 1 << 4);
+		nrf_ipct_shorts_enable(ipctRegisters, 1 << DPPI_CHANNEL);
 
 		nrfx_gppi_conn_enable(gppiHandle);
 	#endif
