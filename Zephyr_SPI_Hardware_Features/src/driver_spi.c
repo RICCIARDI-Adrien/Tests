@@ -78,7 +78,7 @@ static void configureDppi(const struct device *dev)
 		nrfx_gppi_handle_t gppiHandle;
 		int ret;
 
-		sourceEndpoint = nrf_ipct_event_address_get(ipctRegisters, NRF_IPCT_EVENT_RECEIVE_4);
+		sourceEndpoint = nrf_ipct_event_address_get(ipctRegisters, NRF_IPCT_EVENT_RECEIVE_0 + (DPPI_CHANNEL * 4));
 		destinationEndpoint = nrf_spim_task_address_get(data->spim_instance.p_reg, NRF_SPIM_TASK_START);
 
 		ret = nrfx_gppi_conn_alloc(sourceEndpoint, destinationEndpoint, &gppiHandle);
