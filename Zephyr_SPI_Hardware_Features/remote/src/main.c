@@ -65,12 +65,12 @@ static void configureDPPI(void)
 		int ret;
 
 		sourceEndpoint = nrf_timer_event_address_get(timerInstance.p_reg, NRF_TIMER_EVENT_COMPARE0);
-		destinationEndpoint = nrf_ipct_task_address_get(ipctRegisters, NRF_IPCT_TASK_SEND_0 + (DPPI_CHANNEL * 4));
+		destinationEndpoint = nrf_ipct_task_address_get(ipctRegisters, nrf_ipct_send_task_get(DPPI_CHANNEL));
 
 		ret = nrfx_gppi_conn_alloc(sourceEndpoint, destinationEndpoint, &gppiHandle);
 		if (ret != 0)
 		{
-			printk("Error : failed to allocated a GPPI connection (0x%08X).\n", ret);
+			printk("Error : failed to allocate a GPPI connection (0x%08X).\n", ret);
 			return;
 		}
 

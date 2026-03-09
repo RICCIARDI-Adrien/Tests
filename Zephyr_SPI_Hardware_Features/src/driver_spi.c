@@ -78,13 +78,13 @@ static void configureDppi(const struct device *dev)
 		nrfx_gppi_handle_t gppiHandle;
 		int ret;
 
-		sourceEndpoint = nrf_ipct_event_address_get(ipctRegisters, NRF_IPCT_EVENT_RECEIVE_0 + (DPPI_CHANNEL * 4));
+		sourceEndpoint = nrf_ipct_event_address_get(ipctRegisters, nrf_ipct_receive_event_get(DPPI_CHANNEL));
 		destinationEndpoint = nrf_spim_task_address_get(data->spim_instance.p_reg, NRF_SPIM_TASK_START);
 
 		ret = nrfx_gppi_conn_alloc(sourceEndpoint, destinationEndpoint, &gppiHandle);
 		if (ret != 0)
 		{
-			printk("Error : failed to allocated a GPPI connection (0x%08X).\n", ret);
+			printk("Error : failed to allocate a GPPI connection (0x%08X).\n", ret);
 			return;
 		}
 
